@@ -1,0 +1,151 @@
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        </head>
+    <body>
+
+        <div class="container-fluid p-5 bg-primary text-white text-center">
+            <h1>Welcome to "<u>{{ room.name }}</u>" - Chat Room</h1>
+         
+          </div>
+
+        
+
+<input type="text" id="inputname" placeholder="Type ur name">
+
+<div id="container"></div>
+<p id="typing"></p>
+<form id="chatForm">
+    <input type="text" id="inputText" placeholder="Type something...">
+    <button  id="submitButton" type="button">Send</button>
+</form>
+
+
+    </body>
+
+    <script>
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+    
+        var pk = {{ room.id }};  // Use the actual pk value from the template context
+    
+        // Determine the correct WebSocket protocol
+        var protocol = (window.location.protocol === 'https:') ? 'wss://' : 'ws://';
+        var wsUrl = protocol + window.location.host + '/ws/chat/' + pk + '/';
+    
+        // Create a WebSocket connection to the server
+        const socket = new WebSocket(wsUrl);
+        console.log(wsUrl);
+    
+        // Function to display messages on the web page
+        function showMessage(message) {
+            const messageContainer = document.getElementById('container');
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messageContainer.appendChild(messageElement);
+        }
+    
+        // Event handler for when the connection is established
+        socket.addEventListener('open', (event) => {
+            showMessage('Connected to server.');
+        });
+    
+        // Event handler for receiving messages from the server
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            msgtype = data.msgtype;
+            console.log(msgtype)
+            if (msgtype == "typing"){
+               
+
+                $("#typing").text(data.name + " is typing");
+
+            }
+            else{
+                showMessage(`${data.name} at ${data.time}: ${data.message}`);
+                $("#typing").text(" ");
+            }
+            
+        };
+    
+        // Event handler for when the connection is closed
+        socket.addEventListener('close', (event) => {
+            showMessage('Connection closed.');
+        });
+    
+        const inputname = document.getElementById("inputname");
+    
+        const inputText = document.getElementById("inputText");
+        const submitButton = document.getElementById("submitButton");
+    
+        submitButton.addEventListener("click", function () {
+            const inputValue = inputText.value;
+            const inputname = document.getElementById("inputname");
+            const message = {
+                message: inputValue,
+                name:inputname.value,
+                time: new Date().toLocaleTimeString(),
+                msgtype : "msg"
+            };
+            socket.send(JSON.stringify(message));
+            inputText.value = '';  // Clear the input field after sending
+        });
+
+
+             // Prevent form submission on Enter key press and send message instead
+             $('#chatForm').on('keypress', function (e) {
+            if (e.keyCode == 13) {  // Enter key code
+                e.preventDefault();
+                const inputValue = inputText.value;
+                const inputname = document.getElementById("inputname");
+                const message = {
+                    name: inputname.value,  // Replace with the actual username
+                    message: inputValue,
+                    time: new Date().toLocaleTimeString(),
+                    msgtype : "msg"
+                };
+                socket.send(JSON.stringify(message));
+                inputText.value = '';  // Clear the input field after sending
+            }
+        });
+
+
+                // Function to send the message
+                function sendMessage() {
+                    const inputText = document.getElementById("inputText");
+            const inputValue = inputText.value;
+            
+            const inputname = document.getElementById("inputname");
+            const message = {
+                name: inputname.value,  // Replace with the actual username
+                message: inputValue,
+                time: new Date().toLocaleTimeString(),
+                msgtype : "typing"
+            };
+            socket.send(JSON.stringify(message));
+         // Clear the input field after sending
+        }
+
+
+
+            // Prevent form submission on Enter key press and send message instead
+            $('#inputText').on('keyup', function (e) {
+            // Enter key code
+                e.preventDefault();
+                sendMessage();
+            
+        });
+    
+    </script>
+    
+
+</html>
+
+
+
